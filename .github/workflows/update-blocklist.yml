@@ -1,0 +1,35 @@
+name: Update Blocklist
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # Runs every 24h at midnight UTC
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  update-blocklist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: sudo apt update && sudo apt install -y curl
+
+      - name: Download and Merge Blocklists
+        run: |
+          mkdir -p merged_lists
+          touch merged_lists/combined.txt
+
+          while read -r url; do
+            curl -s $url >> merged_lists/combined.txt
+          done < lists.txt
+
+          sort -u merged_lists/combined.txt -o merged_lists/final_blocklist.txt
+
+      - name: Commit and Push Updated List
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add merged_lists/final_blocklist.txt
+          git commit -m "Updated blocklist on $(date)" || echo "No changes to commit"
+          git push
