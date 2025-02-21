@@ -1,28 +1,38 @@
-# pihole-blocklists
 # 🚀 Pi-hole Automated Blocklist Updater  
 
-This repository automates the process of fetching, merging, and deduplicating multiple blocklists for **Pi-hole**.  
-It ensures that Pi-hole always has an up-to-date and optimized blocklist without duplicates.  
+This repository automates the process of **fetching, merging, and deduplicating multiple blocklists** for **Pi-hole**.  
+With this setup, Pi-hole will always use an up-to-date and optimized blocklist without duplicates, fully automated through **GitHub Actions**.  
 
 ---
 
-## 📌 How It Works  
+## 📌 Features  
 
-1. **GitHub Actions** automatically runs every 24 hours to:  
-   - Fetch multiple blocklists from different sources.  
-   - Merge them into a single, clean list.  
-   - Remove duplicates and format it for Pi-hole.  
-   - Store the final blocklist in the repository.  
-
-2. **Pi-hole** fetches the cleaned list every 24 hours to update its **Gravity database**.  
+✅ **Fetches blocklists** from multiple sources (GitHub, raw URLs, etc.).  
+✅ **Merges and removes duplicates** to create a single, optimized list.  
+✅ **Automatically updates** every 24 hours via **GitHub Actions**.  
+✅ **Pi-hole fetches the final blocklist** every 24 hours for **seamless updates**.  
+✅ **Manually trigger updates** whenever needed.  
 
 ---
 
 ## ⚙️ Setup Guide  
 
-### 1️⃣ Add Your Blocklists  
+### 1️⃣ Fork This Repository  
+
+1. Click **Fork** in the top-right corner of this repository to create your own copy.  
+2. Clone your forked repository to your local system:  
+
+   ```sh
+   git clone https://github.com/YOUR-USERNAME/pihole-blocklists.git
+   cd pihole-blocklists
+   ```
+
+---
+
+### 2️⃣ Add Your Blocklists  
+
 1. Open `lists.txt` in this repository.  
-2. Add the URLs of blocklists you want to use, one per line:  
+2. Add the URLs of blocklists you want to include, **one per line**:  
 
    ```txt
    https://some-blocklist-url.com/list.txt
@@ -30,24 +40,28 @@ It ensures that Pi-hole always has an up-to-date and optimized blocklist without
    https://raw.githubusercontent.com/someuser/blocklist/main/list.txt
    ```
 
-3. Save and commit the changes.  
+3. Commit and push your changes:  
+
+   ```sh
+   git add lists.txt
+   git commit -m "Added new blocklists"
+   git push
+   ```
 
 ---
 
-### 2️⃣ Configure GitHub Actions  
-The repository includes a GitHub Actions workflow (`.github/workflows/update-blocklist.yml`) that:  
+### 3️⃣ Enable GitHub Actions  
 
-- Runs every 24 hours at **midnight UTC**.  
-- Fetches all blocklists.  
-- Merges and deduplicates them.  
-- Saves the final blocklist in `merged_lists/final_blocklist.txt`.  
-
-📌 **You can also manually trigger the workflow from the "Actions" tab.**  
+1. Go to your forked repository on GitHub.  
+2. Click on the **"Actions"** tab.  
+3. If GitHub Actions is disabled, click **"Enable Actions"**.  
+4. The **workflow will now automatically run every 24 hours** to update your blocklist.  
 
 ---
 
-### 3️⃣ Get the Final Blocklist URL  
-Once the workflow runs, your cleaned blocklist will be available at:  
+### 4️⃣ Get the Final Blocklist URL  
+
+Once the workflow completes, your **cleaned and deduplicated blocklist** will be available at:  
 
 ```
 https://raw.githubusercontent.com/YOUR-USERNAME/pihole-blocklists/main/merged_lists/final_blocklist.txt
@@ -55,8 +69,9 @@ https://raw.githubusercontent.com/YOUR-USERNAME/pihole-blocklists/main/merged_li
 
 ---
 
-### 4️⃣ Add the Blocklist to Pi-hole  
-On your Raspberry Pi, run the following commands:  
+### 5️⃣ Add the Blocklist to Pi-hole  
+
+On your Raspberry Pi, **run these commands** to add the new blocklist to Pi-hole:  
 
 ```sh
 pihole -a adlist add https://raw.githubusercontent.com/YOUR-USERNAME/pihole-blocklists/main/merged_lists/final_blocklist.txt
@@ -65,8 +80,9 @@ pihole -g  # Update Gravity
 
 ---
 
-### 5️⃣ Automate Pi-hole Updates  
-To ensure Pi-hole fetches the latest blocklist daily, set up a **cron job**:  
+### 6️⃣ Automate Pi-hole Updates  
+
+To ensure Pi-hole fetches the latest blocklist **automatically every 24 hours**, create a cron job:  
 
 ```sh
 crontab -e
@@ -82,8 +98,60 @@ Add this line at the bottom:
 
 ---
 
+## 🎯 How to Manually Update the Blocklist  
+
+If you don’t want to wait for the automatic GitHub Actions run, you can manually **trigger an update**:  
+
+1. Go to the **"Actions"** tab in your GitHub repository.  
+2. Select **"Update Blocklist"** workflow.  
+3. Click **"Run workflow"** to manually trigger an update.  
+
+---
+
+## 🔧 Advanced Usage  
+
+### 🔹 Run the Merge Script Locally  
+
+If you want to manually test and generate a blocklist on your local system, you can do it with:  
+
+```sh
+mkdir -p merged_lists
+touch merged_lists/combined.txt
+
+while read -r url; do
+  curl -s $url >> merged_lists/combined.txt
+done < lists.txt
+
+sort -u merged_lists/combined.txt -o merged_lists/final_blocklist.txt
+```
+
+This will:  
+✅ Fetch all blocklists from `lists.txt`.  
+✅ Merge them into `merged_lists/combined.txt`.  
+✅ Remove duplicates and save the **final blocklist** in `merged_lists/final_blocklist.txt`.  
+
+---
+
+### 🔹 Modify GitHub Actions Schedule  
+
+By default, the blocklist updates **every 24 hours at midnight UTC**.  
+To change this schedule, edit `.github/workflows/update-blocklist.yml` and modify this line:  
+
+```yaml
+- cron: "0 0 * * *"  # Runs every day at midnight UTC
+```
+
+📌 **Use [crontab.guru](https://crontab.guru/) to generate a custom cron schedule.**  
+
+---
+
 ## 🎯 Example: GitHub Actions Workflow  
-If needed, here’s the GitHub Actions workflow that runs automatically:  
+
+This workflow:  
+- Runs **every 24 hours**.  
+- Fetches blocklists from `lists.txt`.  
+- Merges and deduplicates them.  
+- Pushes the final blocklist back to GitHub.  
 
 ```yaml
 name: Update Blocklist
@@ -126,4 +194,54 @@ jobs:
 ---
 
 ## 🎉 Done!  
-Now, Pi-hole will always have an **up-to-date, optimized** blocklist without duplicates, fully automated with **GitHub Actions**! 🚀🔥  
+
+Now, Pi-hole will always have an **up-to-date, optimized** blocklist **without duplicates**, fully automated with **GitHub Actions**! 🚀🔥  
+
+---
+
+## ❓ FAQ  
+
+### ❔ What happens if a blocklist URL goes down?  
+- The workflow will **skip the broken URL** and continue processing other blocklists.  
+- If a blocklist is permanently down, remove it from `lists.txt`.  
+
+### ❔ Can I add my own custom domains?  
+Yes! Just edit `merged_lists/final_blocklist.txt` and add your own domains manually, then push the changes.  
+
+### ❔ How do I manually edit the final blocklist?  
+Clone the repository, edit `merged_lists/final_blocklist.txt`, and commit the changes:  
+
+```sh
+git add merged_lists/final_blocklist.txt
+git commit -m "Added custom blocklist entries"
+git push
+```
+
+### ❔ Can I disable GitHub Actions if I don’t want automatic updates?  
+Yes! Go to the **"Actions"** tab, click on **"Manage Actions"**, and disable it.  
+
+---
+
+## 📜 License  
+
+This project is licensed under the **MIT License**.  
+Feel free to modify and improve it!  
+
+---
+
+## 💡 Contributing  
+
+Want to improve this script? Contributions are welcome!  
+
+1. Fork the repository.  
+2. Make your changes.  
+3. Submit a pull request.  
+
+---
+
+## 🚀 Support  
+
+If you find this useful, consider **starring ⭐ the repository**!  
+For any issues, feel free to open a **GitHub Issue**.  
+
+---
