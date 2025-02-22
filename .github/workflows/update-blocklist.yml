@@ -17,19 +17,27 @@ jobs:
 
       - name: Download and Merge Blocklists
         run: |
+          if [ ! -f lists.txt ]; then
+            echo "Error: lists.txt file not found!"
+            exit 1
+          fi
           mkdir -p merged_lists
           touch merged_lists/combined.txt
-
           while read -r url; do
-            curl -s $url >> merged_lists/combined.txt
+            echo "Fetching: $url"
+            curl -s --fail "$url" >> merged_lists/combined.txt || echo "Failed to fetch $url"
           done < lists.txt
-
           sort -u merged_lists/combined.txt -o merged_lists/final_blocklist.txt
 
       - name: Commit and Push Updated List
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add merged_lists/final_blocklist.txt
-          git commit -m "Updated blocklist on $(date)" || echo "No changes to commit"
-          git push
+          
+          if [ -s merged_lists/final_blocklist.txt ]; then
+            echo "Committing updated blocklist..."
+            git add merged_lists/final_blocklist.txt
+            git commit -m "Updated blocklist on $(date)" || echo "No changes to commit"
+            git push
+          else
+            echo "No new entries in final_blocklist.txt, skipping commit."
